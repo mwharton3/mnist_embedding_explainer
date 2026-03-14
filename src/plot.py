@@ -264,22 +264,25 @@ def plot_with_thumbnails(
     )
 
     if thumbnail_indices is not None:
-        # Compute offset positions for thumbnails (spread them out)
-        x_range = coords_2d[:, 0].max() - coords_2d[:, 0].min()
-        y_range = coords_2d[:, 1].max() - coords_2d[:, 1].min()
-
-        # Place thumbnails offset from their points
-        offset_directions = [
-            (0.15 * x_range, 0.15 * y_range),
-            (-0.15 * x_range, 0.15 * y_range),
-            (0.15 * x_range, -0.15 * y_range),
-            (-0.15 * x_range, -0.15 * y_range),
-        ]
+        x_min, x_max = coords_2d[:, 0].min(), coords_2d[:, 0].max()
+        y_min, y_max = coords_2d[:, 1].min(), coords_2d[:, 1].max()
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+        x_center = (x_min + x_max) / 2
+        y_center = (y_min + y_max) / 2
 
         for i, idx in enumerate(thumbnail_indices):
             pt = coords_2d[idx]
-            direction = offset_directions[i % len(offset_directions)]
-            offset = (pt[0] + direction[0], pt[1] + direction[1])
+            # Push thumbnail away from data center so it doesn't overlap
+            dx = 1.0 if pt[0] >= x_center else -1.0
+            dy = 1.0 if pt[1] >= y_center else -1.0
+            # Alternate: first goes upper, second goes lower-opposite
+            if i % 2 == 1:
+                dx = -dx
+            offset = (
+                np.clip(pt[0] + dx * 0.18 * x_range, x_min + 0.05 * x_range, x_max - 0.05 * x_range),
+                np.clip(pt[1] + dy * 0.18 * y_range, y_min + 0.05 * y_range, y_max - 0.05 * y_range),
+            )
             lbl = thumbnail_labels[i] if thumbnail_labels else ""
             _add_thumbnail(ax, raw_images[idx], tuple(pt), offset, label_text=lbl)
 
