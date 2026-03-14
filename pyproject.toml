@@ -1,0 +1,13 @@
+[project]
+name = "mnist-embedding-explainer"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.3",
+    "scipy>=1.17.1",
+    "torch>=2.10.0",
+    "torchvision>=0.25.0",
+    "umap-learn>=0.5.11",
+]
