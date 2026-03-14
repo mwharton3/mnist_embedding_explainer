@@ -1,54 +1,32 @@
 """Plotting module for MNIST embedding visualizations.
 
-This module generates publication-quality scatterplots of UMAP-projected
-embeddings. It is designed to be configurable and separate from the
-data pipeline so you can iterate on visual style independently.
+This module generates scatterplots of UMAP-projected embeddings.
+It is designed to be configurable and separate from the data pipeline
+so you can iterate on visual style independently.
 
 Main entry points:
     - plot_highlight_scatter(): Basic scatterplot with digit 7 highlighted.
     - plot_with_thumbnails(): Scatterplot with sample digit images overlaid.
     - generate_all_plots(): Convenience function to produce all four figures.
-
-Style configuration is centralized in the STYLE dict at the top of this file.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patheffects as pe
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+
 
 # ---------------------------------------------------------------------------
 # Style configuration — tweak these to change the look of all plots.
 # ---------------------------------------------------------------------------
 STYLE = {
-    # Figure dimensions (inches)
     "figsize": (8, 8),
-
-    # Dot appearance
-    "dot_size": 12,
-    "dot_alpha_bg": 0.35,
-    "dot_alpha_fg": 0.85,
-    "color_bg": "#B0B0B0",
-    "color_fg": "#E63946",
-
-    # Thumbnail overlay settings
-    "thumb_zoom": 0.8,
-    "thumb_border_color": "#264653",
-    "thumb_border_width": 1.5,
-    "line_color": "#264653",
-    "line_width": 1.2,
-    "line_alpha": 0.7,
-
-    # Typography
-    "title_fontsize": 16,
-    "title_fontweight": "bold",
-    "subtitle_fontsize": 11,
-    "label_fontsize": 10,
-
-    # Layout
     "dpi": 200,
-    "bg_color": "#FAFAFA",
-    "spine_color": "#DDDDDD",
+    "dot_size": 10,
+    "dot_alpha_bg": 0.3,
+    "dot_alpha_fg": 0.8,
+    "color_bg": "0.7",
+    "color_fg": "tab:red",
+    "thumb_zoom": 0.8,
 }
 
 
@@ -60,28 +38,19 @@ def _setup_axes(ax, title: str, subtitle: str = ""):
         title: Main title string.
         subtitle: Optional subtitle displayed below the title.
     """
-    ax.set_facecolor(STYLE["bg_color"])
-    ax.set_title(
-        title,
-        fontsize=STYLE["title_fontsize"],
-        fontweight=STYLE["title_fontweight"],
-        pad=18 if subtitle else 12,
-        color="#1D3557",
-    )
+    ax.set_title(title, pad=14 if subtitle else 10)
     if subtitle:
         ax.text(
             0.5, 1.01, subtitle,
             transform=ax.transAxes,
             ha="center", va="bottom",
-            fontsize=STYLE["subtitle_fontsize"],
-            color="#457B9D",
+            fontsize=9,
             style="italic",
+            color="0.4",
         )
     ax.set_xticks([])
     ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_color(STYLE["spine_color"])
-        spine.set_linewidth(0.5)
+    ax.set_aspect("equal")
 
 
 def plot_highlight_scatter(
@@ -108,7 +77,7 @@ def plot_highlight_scatter(
     Returns:
         matplotlib Figure object.
     """
-    fig, ax = plt.subplots(figsize=STYLE["figsize"], facecolor=STYLE["bg_color"])
+    fig, ax = plt.subplots(figsize=STYLE["figsize"])
     _setup_axes(ax, title, subtitle)
 
     mask = labels == highlight_digit
@@ -124,7 +93,7 @@ def plot_highlight_scatter(
     # Highlighted points
     ax.scatter(
         coords_2d[mask, 0], coords_2d[mask, 1],
-        s=STYLE["dot_size"] * 1.8,
+        s=STYLE["dot_size"] * 1.5,
         c=STYLE["color_fg"],
         alpha=STYLE["dot_alpha_fg"],
         edgecolors="white",
@@ -132,18 +101,11 @@ def plot_highlight_scatter(
         zorder=2,
         label=f"Digit {highlight_digit}",
     )
-    ax.legend(
-        loc="lower right",
-        fontsize=STYLE["label_fontsize"],
-        frameon=True,
-        fancybox=True,
-        framealpha=0.9,
-        edgecolor=STYLE["spine_color"],
-    )
+    ax.legend(loc="lower right")
 
     plt.tight_layout()
     if save_path:
-        fig.savefig(save_path, dpi=STYLE["dpi"], bbox_inches="tight", facecolor=fig.get_facecolor())
+        fig.savefig(save_path, dpi=STYLE["dpi"], bbox_inches="tight")
         print(f"  Saved {save_path}")
     return fig
 
@@ -153,25 +115,18 @@ def _add_thumbnail(ax, image: np.ndarray, xy_point, xy_offset, label_text: str =
 
     Args:
         ax: Matplotlib Axes.
-        image: 28×28 grayscale image array (values in [0, 1]).
+        image: 28x28 grayscale image array (values in [0, 1]).
         xy_point: (x, y) coordinates of the data point.
         xy_offset: (x, y) coordinates where the thumbnail should be placed.
         label_text: Optional text label below the thumbnail.
     """
-    im = OffsetImage(
-        image, cmap="gray_r", zoom=STYLE["thumb_zoom"],
-    )
+    im = OffsetImage(image, cmap="gray_r", zoom=STYLE["thumb_zoom"])
     im.image.axes = ax
 
     ab = AnnotationBbox(
         im, xy_offset,
         frameon=True,
-        bboxprops=dict(
-            edgecolor=STYLE["thumb_border_color"],
-            linewidth=STYLE["thumb_border_width"],
-            facecolor="white",
-            boxstyle="round,pad=0.1",
-        ),
+        bboxprops=dict(edgecolor="black", linewidth=1.0, facecolor="white"),
         zorder=10,
     )
     ax.add_artist(ab)
@@ -181,30 +136,26 @@ def _add_thumbnail(ax, image: np.ndarray, xy_point, xy_offset, label_text: str =
         "",
         xy=xy_point,
         xytext=xy_offset,
-        arrowprops=dict(
-            arrowstyle="-",
-            color=STYLE["line_color"],
-            linewidth=STYLE["line_width"],
-            alpha=STYLE["line_alpha"],
-        ),
+        arrowprops=dict(arrowstyle="-", color="black", linewidth=0.8, alpha=0.6),
         zorder=9,
     )
 
     # Data-point marker
     ax.scatter(
         [xy_point[0]], [xy_point[1]],
-        s=60, c=STYLE["thumb_border_color"],
-        marker="o", edgecolors="white", linewidths=1.0, zorder=11,
+        s=50, c="black",
+        marker="o", edgecolors="white", linewidths=0.8, zorder=11,
     )
 
     if label_text:
-        ax.text(
-            xy_offset[0], xy_offset[1] - 3.0,
+        # Use axes transform for consistent offset regardless of data scale
+        ax.annotate(
             label_text,
+            xy=xy_offset,
+            xytext=(0, -25),
+            textcoords="offset points",
             ha="center", va="top",
             fontsize=9, fontweight="bold",
-            color=STYLE["thumb_border_color"],
-            path_effects=[pe.withStroke(linewidth=2, foreground="white")],
             zorder=12,
         )
 
@@ -240,7 +191,7 @@ def plot_with_thumbnails(
     Returns:
         matplotlib Figure object.
     """
-    fig, ax = plt.subplots(figsize=STYLE["figsize"], facecolor=STYLE["bg_color"])
+    fig, ax = plt.subplots(figsize=STYLE["figsize"])
     _setup_axes(ax, title, subtitle)
 
     mask = labels == highlight_digit
@@ -254,7 +205,7 @@ def plot_with_thumbnails(
     )
     ax.scatter(
         coords_2d[mask, 0], coords_2d[mask, 1],
-        s=STYLE["dot_size"] * 1.8,
+        s=STYLE["dot_size"] * 1.5,
         c=STYLE["color_fg"],
         alpha=STYLE["dot_alpha_fg"],
         edgecolors="white",
@@ -286,18 +237,11 @@ def plot_with_thumbnails(
             lbl = thumbnail_labels[i] if thumbnail_labels else ""
             _add_thumbnail(ax, raw_images[idx], tuple(pt), offset, label_text=lbl)
 
-    ax.legend(
-        loc="lower right",
-        fontsize=STYLE["label_fontsize"],
-        frameon=True,
-        fancybox=True,
-        framealpha=0.9,
-        edgecolor=STYLE["spine_color"],
-    )
+    ax.legend(loc="lower right")
 
     plt.tight_layout()
     if save_path:
-        fig.savefig(save_path, dpi=STYLE["dpi"], bbox_inches="tight", facecolor=fig.get_facecolor())
+        fig.savefig(save_path, dpi=STYLE["dpi"], bbox_inches="tight")
         print(f"  Saved {save_path}")
     return fig
 
@@ -384,7 +328,7 @@ def generate_all_plots(data_path: str = "plots/embedding_data.npz", output_dir: 
     plot_highlight_scatter(
         digit_2d, labels,
         title="Digit Classifier Embeddings",
-        subtitle="CNN trained to recognize digits 0–9 · UMAP projection",
+        subtitle="CNN trained to recognize digits 0-9 | UMAP projection",
         save_path=os.path.join(output_dir, "digit_scatter.png"),
     )
     plt.close()
@@ -393,7 +337,7 @@ def generate_all_plots(data_path: str = "plots/embedding_data.npz", output_dir: 
     plot_highlight_scatter(
         eo_2d, labels,
         title="Even/Odd Classifier Embeddings",
-        subtitle="CNN trained to classify even vs. odd · UMAP projection",
+        subtitle="CNN trained to classify even vs. odd | UMAP projection",
         save_path=os.path.join(output_dir, "evenodd_scatter.png"),
     )
     plt.close()

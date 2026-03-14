@@ -62,18 +62,33 @@ def extract_embeddings(model: MnistCNN, images: torch.Tensor) -> np.ndarray:
     return embeddings.cpu().numpy()
 
 
-def project_umap(embeddings: np.ndarray, seed: int = SEED) -> np.ndarray:
+def project_umap(
+    embeddings: np.ndarray,
+    seed: int = SEED,
+    n_neighbors: int = 30,
+    min_dist: float = 0.1,
+    spread: float = 0.5,
+) -> np.ndarray:
     """Project embeddings to 2D using UMAP.
 
     Args:
         embeddings: Array of shape (n, d).
         seed: Random seed for reproducibility.
+        n_neighbors: Number of neighbors for UMAP (higher = more global structure).
+        min_dist: Minimum distance between points in 2D (lower = tighter clusters).
+        spread: Scale of embedded points (lower = clusters closer together).
 
     Returns:
         Array of shape (n, 2).
     """
     import umap
-    reducer = umap.UMAP(n_components=2, random_state=seed, n_neighbors=15, min_dist=0.1)
+    reducer = umap.UMAP(
+        n_components=2,
+        random_state=seed,
+        n_neighbors=n_neighbors,
+        min_dist=min_dist,
+        spread=spread,
+    )
     return reducer.fit_transform(embeddings)
 
 
@@ -95,13 +110,14 @@ if __name__ == "__main__":
     # Digit model embeddings
     digit_model = load_model("models/digit_classifier.pt", num_classes=10)
     digit_emb = extract_embeddings(digit_model, images)
-    digit_2d = project_umap(digit_emb)
+    digit_2d = project_umap(digit_emb, spread=0.3)
     print(f"Digit embeddings shape: {digit_emb.shape} → UMAP: {digit_2d.shape}")
 
-    # Even/odd model embeddings
+    # Even/odd model embeddings — higher n_neighbors to emphasize global
+    # (even vs odd) structure rather than digit-level sub-clusters
     eo_model = load_model("models/even_odd_classifier.pt", num_classes=2)
     eo_emb = extract_embeddings(eo_model, images)
-    eo_2d = project_umap(eo_emb)
+    eo_2d = project_umap(eo_emb, n_neighbors=100, min_dist=0.2, spread=0.3)
     print(f"Even/odd embeddings shape: {eo_emb.shape} → UMAP: {eo_2d.shape}")
 
     # Save for plotting
